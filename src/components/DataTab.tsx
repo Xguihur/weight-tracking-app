@@ -128,6 +128,96 @@ export function DataTab({ weightData }: DataTabProps) {
 
   return (
     <div className="p-4 space-y-6">
+      {/* Monthly Calendar Section */}
+      <Card className="bg-white shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle>月度记录</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateMonth('prev')}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm font-medium min-w-[80px] text-center">
+                {calendarMonth.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateMonth('next')}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Calendar Header */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {['日', '一', '二', '三', '四', '五', '六'].map(day => (
+              <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+          
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {calendarData.map((day, index) => (
+              <div
+                key={index}
+                className={`
+                  aspect-square flex flex-col items-center justify-center text-xs rounded-lg transition-colors
+                  ${!day ? '' : 
+                    day.hasData 
+                      ? 'bg-yellow-100 border border-yellow-200' 
+                      : 'bg-gray-50 border border-gray-100'
+                  }
+                `}
+              >
+                {day && (
+                  <>
+                    <span className="font-medium">{day.day}</span>
+                    {day.weight && (
+                      <span 
+                        className={`text-xs mt-1 px-1 rounded ${
+                          day.changeType === 'decrease' 
+                            ? 'text-green-600 bg-green-100' 
+                            : day.changeType === 'increase'
+                            ? 'text-red-600 bg-red-100'
+                            : 'text-blue-600 bg-blue-100'
+                        }`}
+                      >
+                        {day.weight}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+          
+          {/* Legend */}
+          <div className="flex justify-center gap-4 mt-4 text-xs">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
+              <span>下降</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
+              <span>上升</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
+              <span>已记录</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Line Chart Section */}
       <Card className="bg-white shadow-sm">
         <CardHeader className="pb-3">
@@ -228,96 +318,6 @@ export function DataTab({ weightData }: DataTabProps) {
                 />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Monthly Calendar Section */}
-      <Card className="bg-white shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle>月度记录</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigateMonth('prev')}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-sm font-medium min-w-[80px] text-center">
-                {calendarMonth.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigateMonth('next')}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Calendar Header */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {['日', '一', '二', '三', '四', '五', '六'].map(day => (
-              <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                {day}
-              </div>
-            ))}
-          </div>
-          
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {calendarData.map((day, index) => (
-              <div
-                key={index}
-                className={`
-                  aspect-square flex flex-col items-center justify-center text-xs rounded-lg transition-colors
-                  ${!day ? '' : 
-                    day.hasData 
-                      ? 'bg-yellow-100 border border-yellow-200' 
-                      : 'bg-gray-50 border border-gray-100'
-                  }
-                `}
-              >
-                {day && (
-                  <>
-                    <span className="font-medium">{day.day}</span>
-                    {day.weight && (
-                      <span 
-                        className={`text-xs mt-1 px-1 rounded ${
-                          day.changeType === 'decrease' 
-                            ? 'text-green-600 bg-green-100' 
-                            : day.changeType === 'increase'
-                            ? 'text-red-600 bg-red-100'
-                            : 'text-blue-600 bg-blue-100'
-                        }`}
-                      >
-                        {day.weight}
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-          
-          {/* Legend */}
-          <div className="flex justify-center gap-4 mt-4 text-xs">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
-              <span>下降</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
-              <span>上升</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
-              <span>已记录</span>
-            </div>
           </div>
         </CardContent>
       </Card>
