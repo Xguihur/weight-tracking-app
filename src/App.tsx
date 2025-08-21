@@ -13,11 +13,14 @@ const generateMockData = () => {
   
   // 从当前年度的1月1日开始生成数据
   const startDate = new Date(currentYear, 0, 1) // 1月1日
-  let currentWeight = 72 + Math.random() * 8 // Start between 72-80kg
+  let currentWeight = 68 + Math.random() * 12 // Start between 68-80kg，增加起始体重范围
   
   // 计算当前年度已经过去的天数
   const endDate = new Date(now)
   const daysPassed = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+  
+  // 添加一些长期趋势
+  let trendDirection = (Math.random() - 0.5) * 0.02 // 整体趋势：略微上升或下降
   
   for (let i = 0; i < daysPassed; i++) { // 生成从1月1日到今天的数据
     const date = new Date(startDate)
@@ -27,13 +30,21 @@ const generateMockData = () => {
     const month = date.getMonth()
     let seasonalTrend = 0
     if (month >= 10 || month <= 1) { // 冬季 (11-2月)
-      seasonalTrend = 0.02 // 冬季体重稍微增加
+      seasonalTrend = 0.03 // 冬季体重稍微增加
     } else if (month >= 5 && month <= 8) { // 夏季 (6-9月)
-      seasonalTrend = -0.01 // 夏季体重稍微减少
+      seasonalTrend = -0.02 // 夏季体重稍微减少
     }
     
-    // 添加更真实的体重波动
-    const dailyChange = (Math.random() - 0.5) * 0.6 + seasonalTrend
+    // 添加更真实的体重波动，增加变化幅度
+    const randomChange = (Math.random() - 0.5) * 1.2 // 增加到1.2kg的随机变化范围
+    const weeklyPattern = Math.sin(i / 7 * Math.PI * 2) * 0.3 // 周期性波动
+    
+    // 偶尔改变趋势方向（每30-60天）
+    if (i > 0 && Math.random() < 0.02) {
+      trendDirection = (Math.random() - 0.5) * 0.03
+    }
+    
+    const dailyChange = randomChange + seasonalTrend + weeklyPattern + trendDirection
     currentWeight += dailyChange
     
     // 确保体重在合理范围内
@@ -41,9 +52,9 @@ const generateMockData = () => {
     
     // 增加数据记录的真实性 - 周末记录少一些，工作日多一些
     const dayOfWeek = date.getDay()
-    let recordProbability = 0.75 // 稍微提高基础记录概率
+    let recordProbability = 0.85 // 提高基础记录概率，让数据更连续
     if (dayOfWeek === 0 || dayOfWeek === 6) { // 周末
-      recordProbability = 0.55
+      recordProbability = 0.65 // 周末概率也提高一些
     }
     
     if (Math.random() < recordProbability) {
@@ -60,7 +71,7 @@ const generateMockData = () => {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('data')
-  const [weightData, setWeightData] = useState(generateMockData())
+  const [weightData, setWeightData] = useState(() => generateMockData()) // 使用函数形式确保每次渲染时重新生成
   const [showAddModal, setShowAddModal] = useState(false)
 
   const addWeight = (date: string, weight: number) => {

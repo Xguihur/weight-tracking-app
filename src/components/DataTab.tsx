@@ -128,15 +128,31 @@ export function DataTab({ weightData }: DataTabProps) {
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
       const entry = weightData.find(item => item.date === dateStr)
-      const prevEntry = weightData.find(item => {
-        const prevDate = new Date(year, month, day - 1)
-        return item.date === prevDate.toISOString().split('T')[0]
-      })
       
-      let changeType = 'neutral'
-      if (entry && prevEntry) {
-        if (entry.weight < prevEntry.weight) changeType = 'decrease'
-        else if (entry.weight > prevEntry.weight) changeType = 'increase'
+      let changeType = 'no-data'
+      
+      if (entry) {
+        // 找到当前日期之前最近的一次体重记录
+        const currentTimestamp = new Date(dateStr).getTime()
+        const prevEntries = weightData
+          .filter(item => new Date(item.date).getTime() < currentTimestamp)
+          .sort((a, b) => b.timestamp - a.timestamp) // 按时间倒序排列
+        
+        const prevEntry = prevEntries[0] // 最近的一次记录
+        
+        if (prevEntry) {
+          const weightDiff = entry.weight - prevEntry.weight
+          if (Math.abs(weightDiff) < 0.05) { // 差异小于0.05kg认为是持平
+            changeType = 'neutral'
+          } else if (weightDiff > 0) {
+            changeType = 'increase'
+          } else {
+            changeType = 'decrease'
+          }
+        } else {
+          // 有当前记录但没有之前的记录可对比
+          changeType = 'first-record'
+        }
       }
       
       days.push({
@@ -306,10 +322,14 @@ export function DataTab({ weightData }: DataTabProps) {
                       <span 
                         className={`text-xs mt-1 px-1 rounded ${
                           day.changeType === 'decrease' 
-                            ? 'text-green-600 bg-green-100' 
+                            ? 'text-green-700 bg-green-100' 
                             : day.changeType === 'increase'
-                            ? 'text-red-600 bg-red-100'
-                            : 'text-blue-600 bg-blue-100'
+                            ? 'text-red-700 bg-red-100'
+                            : day.changeType === 'neutral'
+                            ? 'text-gray-700 bg-gray-100'
+                            : day.changeType === 'first-record'
+                            ? 'text-blue-700 bg-blue-100'
+                            : 'text-yellow-700 bg-yellow-100'
                         }`}
                       >
                         {day.weight}
@@ -322,7 +342,7 @@ export function DataTab({ weightData }: DataTabProps) {
           </div>
           
           {/* Legend */}
-          <div className="flex justify-center gap-4 mt-4 text-xs">
+          <div className="flex justify-center flex-wrap gap-3 mt-4 text-xs">
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 bg-green-100 border border-green-200 rounded"></div>
               <span>下降</span>
@@ -332,9 +352,18 @@ export function DataTab({ weightData }: DataTabProps) {
               <span>上升</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-3 h-3 bg-yellow-100 border border-yellow-200 rounded"></div>
-              <span>已记录</span>
+              <div className="w-3 h-3 bg-gray-100 border border-gray-200 rounded"></div>
+              <span>持平</span>
             </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-blue-100 border border-blue-200 rounded"></div>
+              <span>首次</span>
+            </div>
+          </div>
+          
+          {/* Legend Description */}
+          <div className="text-center mt-2">
+            <div className="text-xs text-gray-500">颜色对比基于最近一次记录</div>
           </div>
         </CardContent>
       </Card>
