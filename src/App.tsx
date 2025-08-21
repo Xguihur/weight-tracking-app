@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react'
-import { Card } from './components/ui/card'
+import { useState } from 'react'
 import { Button } from './components/ui/button'
-import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet'
-import { Calendar, TrendingUp, User, Plus, BarChart3, Share2, Settings, Info } from 'lucide-react'
+import { User, Plus, BarChart3 } from 'lucide-react'
 import { DataTab } from './components/DataTab'
 import { AddWeightModal } from './components/AddWeightModal'
 import { ProfileTab } from './components/ProfileTab'
@@ -10,21 +8,45 @@ import { ProfileTab } from './components/ProfileTab'
 // Mock data for weight tracking
 const generateMockData = () => {
   const data = []
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - 3)
+  const now = new Date()
+  const currentYear = now.getFullYear()
   
-  let currentWeight = 70 + Math.random() * 10 // Start between 70-80kg
+  // 从当前年度的1月1日开始生成数据
+  const startDate = new Date(currentYear, 0, 1) // 1月1日
+  let currentWeight = 72 + Math.random() * 8 // Start between 72-80kg
   
-  for (let i = 0; i < 90; i++) {
+  // 计算当前年度已经过去的天数
+  const endDate = new Date(now)
+  const daysPassed = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+  
+  for (let i = 0; i < daysPassed; i++) { // 生成从1月1日到今天的数据
     const date = new Date(startDate)
-    date.setDate(date.getDate() + i)
+    date.setDate(startDate.getDate() + i)
     
-    // Add some realistic weight fluctuation
-    const change = (Math.random() - 0.5) * 0.4
-    currentWeight += change
+    // 添加季节性体重变化趋势
+    const month = date.getMonth()
+    let seasonalTrend = 0
+    if (month >= 10 || month <= 1) { // 冬季 (11-2月)
+      seasonalTrend = 0.02 // 冬季体重稍微增加
+    } else if (month >= 5 && month <= 8) { // 夏季 (6-9月)
+      seasonalTrend = -0.01 // 夏季体重稍微减少
+    }
     
-    // Only add data for ~70% of days (realistic logging pattern)
-    if (Math.random() > 0.3) {
+    // 添加更真实的体重波动
+    const dailyChange = (Math.random() - 0.5) * 0.6 + seasonalTrend
+    currentWeight += dailyChange
+    
+    // 确保体重在合理范围内
+    currentWeight = Math.max(65, Math.min(85, currentWeight))
+    
+    // 增加数据记录的真实性 - 周末记录少一些，工作日多一些
+    const dayOfWeek = date.getDay()
+    let recordProbability = 0.75 // 稍微提高基础记录概率
+    if (dayOfWeek === 0 || dayOfWeek === 6) { // 周末
+      recordProbability = 0.55
+    }
+    
+    if (Math.random() < recordProbability) {
       data.push({
         date: date.toISOString().split('T')[0],
         weight: Math.round(currentWeight * 10) / 10,
@@ -65,7 +87,7 @@ export default function App() {
   return (
     <div className="mobile-container bg-yellow-50 min-h-screen flex flex-col">
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className="flex-1 overflow-y-auto pb-20 max-h-screen">
         {getTabContent()}
       </div>
 

@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface WeightEntry {
@@ -16,60 +16,97 @@ interface DataTabProps {
 
 export function DataTab({ weightData }: DataTabProps) {
   const [lineChartPeriod, setLineChartPeriod] = useState<'week' | 'month' | 'year'>('week')
-  const [barChartMode, setBarChartMode] = useState<'weekly' | 'monthly'>('weekly')
   const [calendarMonth, setCalendarMonth] = useState(new Date())
 
   // Prepare line chart data
   const lineChartData = useMemo(() => {
     const now = new Date()
-    let startDate = new Date()
     
     switch (lineChartPeriod) {
-      case 'week':
-        startDate.setDate(now.getDate() - 7)
-        break
-      case 'month':
-        startDate.setMonth(now.getMonth() - 1)
-        break
-      case 'year':
-        startDate.setFullYear(now.getFullYear() - 1)
-        break
-    }
-    
-    return weightData
-      .filter(entry => new Date(entry.date) >= startDate)
-      .map(entry => ({
-        date: entry.date,
-        weight: entry.weight,
-        displayDate: lineChartPeriod === 'week' 
-          ? new Date(entry.date).toLocaleDateString('zh-CN', { weekday: 'short' })
-          : lineChartPeriod === 'month'
-          ? new Date(entry.date).toLocaleDateString('zh-CN', { day: 'numeric' })
-          : new Date(entry.date).toLocaleDateString('zh-CN', { month: 'short' })
-      }))
-  }, [weightData, lineChartPeriod])
-
-  // Prepare bar chart data
-  const barChartData = useMemo(() => {
-    const grouped: { [key: string]: number[] } = {}
-    
-    weightData.forEach(entry => {
-      const date = new Date(entry.date)
-      const key = barChartMode === 'weekly' 
-        ? `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`
-        : `${date.getFullYear()}-${date.getMonth() + 1}`
+      case 'week': {
+        // 获取本周的周一
+        const today = new Date(now)
+        const dayOfWeek = today.getDay()
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek // 周日是0，需要特殊处理
+        const monday = new Date(today)
+        monday.setDate(today.getDate() + mondayOffset)
+        
+        // 生成本周7天的数据
+        const weekData = []
+        const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+        
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(monday)
+          date.setDate(monday.getDate() + i)
+          const dateStr = date.toISOString().split('T')[0]
+          const entry = weightData.find(item => item.date === dateStr)
+          
+          weekData.push({
+            date: dateStr,
+            weight: entry?.weight || null,
+            displayDate: dayNames[i]
+          })
+        }
+        
+        return weekData
+      }
       
-      if (!grouped[key]) grouped[key] = []
-      grouped[key].push(entry.weight)
-    })
-    
-    return Object.entries(grouped)
-      .map(([period, weights]) => ({
-        period,
-        average: Math.round((weights.reduce((sum, w) => sum + w, 0) / weights.length) * 10) / 10
-      }))
-      .slice(-8) // Show last 8 periods
-  }, [weightData, barChartMode])
+      case 'month': {
+        // 获取本月的第一天和最后一天
+        const year = now.getFullYear()
+        const month = now.getMonth()
+        const lastDay = new Date(year, month + 1, 0)
+        
+        // 生成本月所有天的数据
+        const monthData = []
+        for (let day = 1; day <= lastDay.getDate(); day++) {
+          const date = new Date(year, month, day)
+          const dateStr = date.toISOString().split('T')[0]
+          const entry = weightData.find(item => item.date === dateStr)
+          
+          monthData.push({
+            date: dateStr,
+            weight: entry?.weight || null,
+            displayDate: day.toString()
+          })
+        }
+        
+        return monthData
+      }
+      
+      case 'year': {
+        // 获取当前年度12个月的平均数据（从1月到12月）
+        const yearData = []
+        const currentYear = now.getFullYear()
+        
+        for (let month = 0; month < 12; month++) {
+          const monthStr = `${currentYear}-${String(month + 1).padStart(2, '0')}`
+          
+          // 找到这个月的所有体重数据
+          const monthEntries = weightData.filter(entry => {
+            return entry.date.startsWith(monthStr)
+          })
+          
+          let averageWeight = null
+          if (monthEntries.length > 0) {
+            const average = monthEntries.reduce((sum, entry) => sum + entry.weight, 0) / monthEntries.length
+            averageWeight = Math.round(average * 10) / 10 // 保留一位小数
+          }
+          
+          yearData.push({
+            date: monthStr,
+            weight: averageWeight,
+            displayDate: `${month + 1}月`
+          })
+        }
+        
+        return yearData
+      }
+      
+      default:
+        return []
+    }
+  }, [weightData, lineChartPeriod])
 
   // Prepare calendar data
   const calendarData = useMemo(() => {
@@ -124,6 +161,90 @@ export function DataTab({ weightData }: DataTabProps) {
       }
       return newDate
     })
+  }
+
+  // Custom tooltip content
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      const weight = data.weight
+      
+      if (!weight) return null
+      
+      // Get date info
+      const date = new Date(data.date)
+      const dayName = date.toLocaleDateString('zh-CN', { weekday: 'long' })
+      const fullDate = date.toLocaleDateString('zh-CN', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })
+      
+      // Calculate change from previous day (only for non-year view)
+      let changeInfo = null
+      if (lineChartPeriod !== 'year') {
+        const prevDate = new Date(date)
+        prevDate.setDate(prevDate.getDate() - 1)
+        const prevDateStr = prevDate.toISOString().split('T')[0]
+        const prevEntry = weightData.find(item => item.date === prevDateStr)
+        
+        if (prevEntry) {
+          const change = weight - prevEntry.weight
+          changeInfo = {
+            change: Math.round(change * 10) / 10,
+            type: change > 0 ? 'increase' : change < 0 ? 'decrease' : 'same'
+          }
+        }
+      }
+      
+      return (
+        <div className="bg-white p-3 rounded-lg shadow-lg border border-yellow-200 max-w-xs">
+          {lineChartPeriod !== 'year' ? (
+            <>
+              {/* 日期信息 */}
+              <div className="text-xs text-gray-500 mb-1">{dayName}</div>
+              <div className="text-sm font-medium mb-2">{fullDate}</div>
+              
+              {/* 体重 */}
+              <div className="text-lg font-bold text-yellow-600 mb-2">
+                {weight} kg
+              </div>
+              
+              {/* 变化信息 */}
+              {changeInfo && (
+                <div className="text-xs">
+                  <span className="text-gray-500">较前一天: </span>
+                  <span className={`font-medium ${
+                    changeInfo.type === 'increase' 
+                      ? 'text-red-600' 
+                      : changeInfo.type === 'decrease'
+                      ? 'text-green-600'
+                      : 'text-blue-600'
+                  }`}>
+                    {changeInfo.type === 'increase' && '+'}
+                    {changeInfo.change} kg
+                    {changeInfo.type === 'increase' && ' ↗'}
+                    {changeInfo.type === 'decrease' && ' ↘'}
+                    {changeInfo.type === 'same' && ' →'}
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* 年视图 */}
+              <div className="text-sm font-medium mb-1">{label}</div>
+              <div className="text-lg font-bold text-yellow-600 mb-1">
+                {weight} kg
+              </div>
+              <div className="text-xs text-gray-500">月平均体重</div>
+            </>
+          )}
+        </div>
+      )
+    }
+    
+    return null
   }
 
   return (
@@ -258,65 +379,29 @@ export function DataTab({ weightData }: DataTabProps) {
                   tick={{ fontSize: 12, fill: '#666' }}
                   domain={['dataMin - 1', 'dataMax + 1']}
                 />
+                <Tooltip 
+                  content={<CustomTooltip />}
+                  cursor={{ stroke: '#FFD700', strokeWidth: 1, strokeDasharray: '5 5' }}
+                />
                 <Line 
                   type="monotone" 
                   dataKey="weight" 
                   stroke="#FFD700" 
                   strokeWidth={3}
-                  dot={{ fill: '#FFD700', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: '#FFD700', strokeWidth: 2, fill: '#fff' }}
+                  dot={{ 
+                    fill: '#FFD700', 
+                    strokeWidth: 2, 
+                    r: 4
+                  }}
+                  activeDot={{ 
+                    r: 6, 
+                    stroke: '#FFD700', 
+                    strokeWidth: 2, 
+                    fill: '#fff'
+                  }}
+                  connectNulls={false}
                 />
               </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Bar Chart Section */}
-      <Card className="bg-white shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle>平均对比</CardTitle>
-            <div className="flex bg-yellow-100 rounded-lg p-1">
-              {(['weekly', 'monthly'] as const).map((mode) => (
-                <Button
-                  key={mode}
-                  variant="ghost"
-                  size="sm"
-                  className={`px-3 py-1 rounded-md transition-colors ${
-                    barChartMode === mode 
-                      ? 'bg-yellow-500 text-white' 
-                      : 'text-yellow-800 hover:bg-yellow-200'
-                  }`}
-                  onClick={() => setBarChartMode(mode)}
-                >
-                  {mode === 'weekly' ? '周均' : '月均'}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={barChartData}>
-                <XAxis 
-                  dataKey="period" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: '#666' }}
-                />
-                <YAxis 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: '#666' }}
-                />
-                <Bar 
-                  dataKey="average" 
-                  fill="#FFEB3B" 
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
