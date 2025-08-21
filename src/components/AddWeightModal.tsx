@@ -125,35 +125,37 @@ export function AddWeightModal({ isOpen, onClose, onAddWeight, existingData }: A
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-sm mx-auto rounded-t-3xl rounded-b-none p-0 bottom-0 top-auto translate-y-0 data-[state=open]:slide-in-from-bottom-full">
+      <DialogContent className="w-full max-w-sm mx-auto rounded-t-3xl rounded-b-none p-0 bottom-0 top-auto translate-y-0 data-[state=open]:slide-in-from-bottom-full [&>button]:hidden">
         {step === 'date' ? (
           /* Date Selection */
           <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="text-center mb-6">
+              <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
               <h2 className="text-xl font-medium">选择日期</h2>
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                ✕
-              </Button>
             </div>
 
             {/* Month Navigation */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigateMonth('prev')}
+                className="p-2 hover:bg-gray-100 rounded-full"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-5 h-5" />
               </Button>
-              <span className="font-medium">
-                {calendarMonth.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })}
-              </span>
+              <div className="text-center">
+                <div className="font-medium text-lg">
+                  {calendarMonth.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })}
+                </div>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigateMonth('next')}
+                className="p-2 hover:bg-gray-100 rounded-full"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
 
@@ -199,22 +201,27 @@ export function AddWeightModal({ isOpen, onClose, onAddWeight, existingData }: A
                 <span>已记录</span>
               </div>
             </div>
+            
+            <div className="text-center mt-6">
+              <p className="text-xs text-gray-400">点击空白处关闭</p>
+            </div>
           </div>
         ) : (
           /* Weight Input */
           <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-center mb-6 relative">
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => setStep('date')}
+                className="absolute left-0"
               >
                 ← 返回
               </Button>
-              <h2 className="text-xl font-medium">记录体重</h2>
-              <Button variant="ghost" size="sm" onClick={onClose}>
-                ✕
-              </Button>
+              <div className="text-center">
+                <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+                <h2 className="text-xl font-medium">记录体重</h2>
+              </div>
             </div>
 
             {/* Selected Date Display */}
@@ -238,23 +245,23 @@ export function AddWeightModal({ isOpen, onClose, onAddWeight, existingData }: A
             </div>
 
             {/* Keypad */}
-            <div className="space-y-3 mb-6">
+            <div className="space-y-4 mb-8">
               {keypadButtons.map((row, rowIndex) => (
-                <div key={rowIndex} className="flex gap-3 justify-center">
+                <div key={rowIndex} className="flex gap-4 justify-center">
                   {row.map((key) => (
                     <button
                       key={key}
                       className={`
-                        w-16 h-16 rounded-xl font-medium transition-all
+                        w-20 h-20 rounded-2xl font-semibold text-lg transition-all transform active:scale-95 shadow-sm
                         ${key === 'delete' 
-                          ? 'bg-gray-100 hover:bg-gray-200 flex items-center justify-center' 
-                          : 'bg-yellow-100 hover:bg-yellow-200 active:scale-95'
+                          ? 'bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center' 
+                          : 'bg-gradient-to-b from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 border border-yellow-200 text-yellow-800'
                         }
                       `}
                       onClick={() => handleKeypadPress(key)}
                     >
                       {key === 'delete' ? (
-                        <Delete className="w-5 h-5" />
+                        <Delete className="w-6 h-6" />
                       ) : (
                         key
                       )}
@@ -266,12 +273,16 @@ export function AddWeightModal({ isOpen, onClose, onAddWeight, existingData }: A
 
             {/* Complete Button */}
             <Button 
-              className="w-full h-12 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-xl"
+              className="w-full h-12 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleComplete}
               disabled={!weightInput || parseFloat(weightInput) <= 0}
             >
-              完成
+              完成记录
             </Button>
+            
+            <div className="text-center mt-4">
+              <p className="text-xs text-gray-400">点击空白处关闭</p>
+            </div>
           </div>
         )}
       </DialogContent>
