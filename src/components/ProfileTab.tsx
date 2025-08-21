@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Card, CardContent } from './ui/card'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet'
 import { Share2, Settings, Info, ChevronRight, Download } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts'
 
@@ -172,9 +171,23 @@ export function ProfileTab({ weightData }: ProfileTabProps) {
             </div>
 
             {/* Preview Card */}
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
-              {/* Chart Section (Top 50%) */}
-              <div className="h-32 mb-4">
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200 shadow-sm">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-lg text-gray-800">我的体重记录</h3>
+                  <p className="text-sm text-gray-600">
+                    {shareRange === 'week' ? '最近一周' : shareRange === 'month' ? '最近一月' : '最近一年'}的进步
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">记录天数</div>
+                  <div className="text-lg font-bold text-yellow-600">{shareData.length}</div>
+                </div>
+              </div>
+              
+              {/* Chart Section */}
+              <div className="h-32 mb-4 bg-white bg-opacity-50 rounded-lg p-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={shareData}>
                     <XAxis dataKey="displayDate" hide />
@@ -183,38 +196,113 @@ export function ProfileTab({ weightData }: ProfileTabProps) {
                       type="monotone" 
                       dataKey="weight" 
                       stroke="#FFD700" 
-                      strokeWidth={2}
-                      dot={{ fill: '#FFD700', r: 3 }}
+                      strokeWidth={3}
+                      dot={{ fill: '#FFD700', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: '#FFD700', strokeWidth: 2, fill: '#fff' }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* Quote Section (Middle) */}
-              <div className="text-center mb-6">
-                <p className="text-sm text-gray-700 italic">"{randomQuote}"</p>
+              {/* Stats Section */}
+              {shareData.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="text-center bg-white bg-opacity-60 rounded-lg p-3 shadow-sm">
+                    <div className="text-xs text-gray-500 mb-1">最新体重</div>
+                    <div className="text-base font-bold text-yellow-600">
+                      {shareData[shareData.length - 1]?.weight} kg
+                    </div>
+                  </div>
+                  <div className="text-center bg-white bg-opacity-60 rounded-lg p-3 shadow-sm">
+                    <div className="text-xs text-gray-500 mb-1">最高体重</div>
+                    <div className="text-base font-bold text-gray-700">
+                      {Math.max(...shareData.map(d => d.weight))} kg
+                    </div>
+                  </div>
+                  <div className="text-center bg-white bg-opacity-60 rounded-lg p-3 shadow-sm">
+                    <div className="text-xs text-gray-500 mb-1">最低体重</div>
+                    <div className="text-base font-bold text-gray-700">
+                      {Math.min(...shareData.map(d => d.weight))} kg
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Quote Section */}
+              <div className="text-center mb-4 py-3 bg-white bg-opacity-30 rounded-lg">
+                <p className="text-sm text-gray-700 italic font-medium">"{randomQuote}"</p>
               </div>
 
-              {/* QR Code Section (Bottom right) */}
-              <div className="flex justify-end">
-                <div className="w-12 h-12 bg-gray-200 rounded border-2 border-dashed border-gray-400 flex items-center justify-center">
-                  <span className="text-xs text-gray-500">QR</span>
+              {/* Bottom Section with QR Code */}
+              <div className="flex items-end justify-between">
+                <div>
+                  <div className="text-xs text-gray-500 mb-1">扫码获取更多健康资讯</div>
+                  <div className="text-xs text-gray-400">
+                    {new Date().toLocaleDateString('zh-CN', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </div>
+                </div>
+                <div className="flex-shrink-0">
+                  <img 
+                    src="./assets/images/erCode.jpg" 
+                    alt="二维码" 
+                    className="w-16 h-16 rounded-lg border-2 border-white shadow-sm object-cover"
+                    onError={(e) => {
+                      // 如果图片加载失败，显示备用方案
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                      const parent = target.parentElement
+                      if (parent) {
+                        parent.innerHTML = `
+                          <div class="w-16 h-16 bg-gradient-to-br from-yellow-200 to-yellow-300 rounded-lg border-2 border-white flex items-center justify-center shadow-sm">
+                            <div class="text-center">
+                              <div class="text-xs font-bold text-yellow-800">QR</div>
+                              <div class="text-xs text-yellow-600">扫码</div>
+                            </div>
+                          </div>
+                        `
+                      }
+                    }}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Share Button */}
-            <Button 
-              className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
-              onClick={() => {
-                // Mock share functionality
-                alert('分享功能（模拟）')
-                setShowShareDialog(false)
-              }}
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              分享卡片
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button 
+                variant="outline"
+                className="flex-1 border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+                onClick={() => {
+                  // Mock download functionality
+                  alert('下载卡片功能（模拟）')
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                下载
+              </Button>
+              <Button 
+                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white shadow-sm"
+                onClick={() => {
+                  // Mock share functionality
+                  alert('分享功能（模拟）')
+                  setShowShareDialog(false)
+                }}
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                分享
+              </Button>
+            </div>
+            
+            {/* Tips */}
+            <div className="text-center">
+              <p className="text-xs text-gray-500">
+                分享您的健康进步，激励更多朋友一起行动
+              </p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
